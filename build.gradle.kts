@@ -353,6 +353,11 @@ val codeqlCompileJvm = tasks.register<JavaExec>("codeqlCompileJvm") {
     inputs.files(codeqlSourceClasspath).withNormalizer(ClasspathNormalizer::class.java)
     outputs.dir(outDir)
 
+    // Skip when commonMain has no Kotlin source. kotlinc 2.3.21 with an
+    // empty source-file list drops into REPL mode and fails with
+    // "Kotlin REPL is deprecated and should be enabled explicitly for now".
+    onlyIf("commonMain has at least one Kotlin source") { sources.files.isNotEmpty() }
+
     doFirst {
         outDir.get().asFile.mkdirs()
         args = listOf(
