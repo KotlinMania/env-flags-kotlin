@@ -3,359 +3,261 @@ package io.github.kotlinmania.envflags
 
 import kotlin.reflect.KProperty
 import kotlin.time.Duration
-import kotlin.time.Duration.Companion.seconds
+import kotlin.time.DurationUnit
+import kotlin.time.toDuration
 
 /**
- * This crate exports the [envFlag] helper, which allows a convenient way to declare static
- * environment variables with optional default values and custom parsing functions.
- *
- * Currently, this crate requires Kotlin's [kotlin.Lazy] under the hood (the Kotlin analogue of
- * Rust's `std::sync::LazyLock`).
+ * This package exports the `envFlag` factory, which provides a convenient way to declare
+ * lazy-initialized environment variable accessors with optional default values and custom
+ * parsing functions.
  *
  * # Examples
- *
  * ```kotlin
  * import io.github.kotlinmania.envflags.envFlag
- * import io.github.kotlinmania.envflags.IntParser
- * import io.github.kotlinmania.envflags.StringParser
- * import io.github.kotlinmania.envflags.NullableParser
- * import io.github.kotlinmania.envflags.DurationParser
- * import io.github.kotlinmania.envflags.BoolParser
- * import io.github.kotlinmania.envflags.UShortParser
- * import io.github.kotlinmania.envflags.ListParser
+ * import io.github.kotlinmania.envflags.Parsers
+ * import kotlin.time.Duration
  *
- * // Required env var, panics if missing.
- * val AUTH_TOKEN by envFlag("AUTH_TOKEN", StringParser)
- * // Env var with a default value if not specified.
- * val PORT by envFlag("PORT", UShortParser, default = { 8080u })
- * // An optional env var.
- * val OVERRIDE_HOSTNAME by envFlag("OVERRIDE_HOSTNAME", NullableParser(StringParser), default = { null })
+ * /** Required env var, panics if missing. */
+ * val AUTH_TOKEN: LazyEnv<String> = envFlag("AUTH_TOKEN", Parsers.string)
  *
- * // Duration by default is parsed as seconds (f64).
- * val TIMEOUT by envFlag("TIMEOUT", DurationParser, default = { 5.seconds })
- * // Custom parsing function, takes a String and returns a Result<Duration>.
- * val TIMEOUT_MS by envFlag(
- *     "TIMEOUT_MS",
- *     parser = { v -> v.toLongOrNull()?.let { Result.success(it.milliseconds) }
- *         ?: Result.failure(ParseError("Duration", "expected a long: $v")) },
- *     default = { 30.milliseconds },
- * )
+ * /** Env var with a default value if not specified. */
+ * val PORT: LazyEnv<UShort> = envFlag("PORT", Parsers.uShort) { 8080u }
  *
- * // Boolean can be true, false, 1, or 0 (case insensitive).
- * // eg. export ENABLE_FEATURE="true"
- * val ENABLE_FEATURE by envFlag("ENABLE_FEATURE", BoolParser, default = { true })
+ * /** An optional env var. */
+ * val OVERRIDE_HOSTNAME: LazyEnv<String?> = envFlag("OVERRIDE_HOSTNAME", Parsers.optional(Parsers.string)) { null }
  *
- * // List<T> by default is parsed as a comma-separated string.
- * // eg. export VALID_PORTS="80,443,9121"
- * val VALID_PORTS by envFlag("VALID_PORTS", ListParser(UShortParser), default = { listOf(80u, 443u, 9121u) })
+ * /** `Duration` by default is parsed as `Double` seconds. */
+ * val TIMEOUT: LazyEnv<Duration> = envFlag("TIMEOUT", Parsers.duration) { Duration.parse("PT5S") }
+ * /** Custom parsing function, takes a `String` and returns a parsed `Duration`. */
+ * val TIMEOUT_MS: LazyEnv<Duration> = envFlag("TIMEOUT_MS", { value ->
+ *     value.toLong().toDuration(DurationUnit.MILLISECONDS)
+ * }) { 30L.toDuration(DurationUnit.MILLISECONDS) }
+ *
+ * /** `Boolean` can be true, false, 1, or 0 (case insensitive). */
+ * val ENABLE_FEATURE: LazyEnv<Boolean> = envFlag("ENABLE_FEATURE", Parsers.boolean) { true }
+ *
+ * /** `List<T>` by default is parsed as a comma-separated string. */
+ * val VALID_PORTS: LazyEnv<List<UShort>> = envFlag("VALID_PORTS", Parsers.list(Parsers.uShort)) {
+ *     listOf(80u, 443u, 9121u)
+ * }
  * ```
  *
  * For custom types, you can either specify a parsing function manually (see above `TIMEOUT_MS`
- * example), or you can implement the [ParseEnv] interface. An implementation of [ParseEnv] is
- * included for most common Kotlin types.
- *
- * # Platform notes
- *
- * Environment-variable access is wired through the [envGet] expect declaration, which provides a
- * String value or `null`. Each KMP target supplies its own actual; the browser variants of `js`
- * and `wasmJs` always return `null` because no environment is reachable from a browser document.
- *
- * # Omitted Rust types
- *
- * The upstream Rust crate also implements [ParseEnv] for `i128`, `u128`, `isize`, `usize`,
- * `IpAddr`, `Ipv4Addr`, `Ipv6Addr`, `SocketAddr`, and `PathBuf`. None of those have a
- * Kotlin-stdlib analogue available in commonMain, and pulling in a third-party numeric or
- * networking library to back them would change the published surface area of every consumer.
- * Until separate `*-kotlin` ports of those Rust types exist, callers that need them can use a
- * custom parser function. The associated upstream Rust integration tests are translated below
- * as parser tests against the surviving Kotlin shape.
+ * example), or you can implement a [ParseEnv] instance. Implementations for [ParseEnv] are
+ * provided in [Parsers] for most stdlib types.
  */
 
 /**
- * Define the parsing function for a type from a [String] environment variable.
+ * Define the parsing function for a type from a `String` environment variable.
  *
- * Check the source for the built-in type definitions for this trait if you're concerned about
- * the parsing logic.
+ * Check [Parsers] for the built-in type definitions if you're concerned about the parsing logic.
+ * The thrown exception's `message` will appear in the panic message when parsing fails.
  */
-public interface ParseEnv<T> {
-    /**
-     * Tries to parse the value from [envGet]. The failure path returns a [Throwable] whose
-     * [Throwable.toString] (or [Throwable.message]) appears in the panic message produced when
-     * a required environment variable cannot be parsed.
-     */
-    public fun parseEnv(value: String): Result<T>
+public fun interface ParseEnv<out T> {
+    /** Tries to parse the value retrieved from the platform environment. */
+    public fun parseEnv(value: String): T
 }
 
-/**
- * Intermediate error type used in parsing failures to generate helpful messages.
- */
+/** Intermediate error type used in parsing failures to generate helpful messages. */
 public class ParseError(
     public val typeName: String,
     public val msg: String,
 ) : RuntimeException("failed to parse as $typeName: $msg") {
-    public fun withTypeName(newTypeName: String): ParseError = ParseError(newTypeName, msg)
-
     public companion object {
         public fun fromMsg(typeName: String, msg: Any?): ParseError =
             ParseError(typeName = typeName, msg = msg.toString())
     }
+
+    internal fun withTypeName(newTypeName: String): ParseError =
+        ParseError(typeName = newTypeName, msg = msg)
 }
 
-// Implements ParseEnv for common types based on the Kotlin stdlib `String.toXxx()` family — the
-// Kotlin analogue of Rust's `std::str::FromStr`. Each upstream `gen_parse_env_using_fromstr!(t)`
-// instantiation translates to one Kotlin object below.
-private inline fun <T : Any> parseFromStr(
-    typeName: String,
-    value: String,
-    parse: (String) -> T?,
-): Result<T> {
-    val parsed = try {
-        parse(value)
-    } catch (e: NumberFormatException) {
-        return Result.failure(ParseError.fromMsg(typeName, e.message ?: value))
-    }
-    return if (parsed != null) {
-        Result.success(parsed)
-    } else {
-        Result.failure(ParseError.fromMsg(typeName, "invalid $typeName: $value"))
-    }
-}
+/**
+ * Built-in [ParseEnv] instances mirroring the upstream `gen_parse_env_using_fromstr!`,
+ * `String`, `&'static str`, `Duration`, `Vec<T>`, `HashSet<T>`, `Option<T>`, and `bool` impls.
+ *
+ * Where Kotlin's stdlib does not provide a direct counterpart of the Rust standard library type
+ * (`IpAddr`, `Ipv4Addr`, `Ipv6Addr`, `SocketAddr`, `PathBuf`), this module exposes a small
+ * value class with the same parsing behavior so the public API surface matches the upstream.
+ */
+public object Parsers {
+    private inline fun <T> fromStr(typeName: String, crossinline body: (String) -> T): ParseEnv<T> =
+        ParseEnv { value ->
+            try {
+                body(value)
+            } catch (e: NumberFormatException) {
+                throw ParseError.fromMsg(typeName, e.message ?: e)
+            } catch (e: IllegalArgumentException) {
+                throw ParseError.fromMsg(typeName, e.message ?: e)
+            }
+        }
 
-public object FloatParser : ParseEnv<Float> {
-    override fun parseEnv(value: String): Result<Float> = parseFromStr("Float", value) {
-        when (it.lowercase()) {
-            "nan" -> Float.NaN
+    public val float: ParseEnv<Float> = ParseEnv { value ->
+        when (value.lowercase()) {
+            "nan", "+nan", "-nan" -> Float.NaN
             "inf", "+inf", "infinity", "+infinity" -> Float.POSITIVE_INFINITY
             "-inf", "-infinity" -> Float.NEGATIVE_INFINITY
-            else -> it.toFloatOrNull()
+            else -> try {
+                value.toFloat()
+            } catch (e: NumberFormatException) {
+                throw ParseError.fromMsg("Float", e.message ?: e)
+            }
         }
     }
-}
 
-public object DoubleParser : ParseEnv<Double> {
-    override fun parseEnv(value: String): Result<Double> = parseFromStr("Double", value) {
-        when (it.lowercase()) {
-            "nan" -> Double.NaN
+    public val double: ParseEnv<Double> = ParseEnv { value ->
+        when (value.lowercase()) {
+            "nan", "+nan", "-nan" -> Double.NaN
             "inf", "+inf", "infinity", "+infinity" -> Double.POSITIVE_INFINITY
             "-inf", "-infinity" -> Double.NEGATIVE_INFINITY
-            else -> it.toDoubleOrNull()
+            else -> try {
+                value.toDouble()
+            } catch (e: NumberFormatException) {
+                throw ParseError.fromMsg("Double", e.message ?: e)
+            }
+        }
+    }
+    public val byte: ParseEnv<Byte> = fromStr("Byte") { it.toByte() }
+    public val short: ParseEnv<Short> = fromStr("Short") { it.toShort() }
+    public val int: ParseEnv<Int> = fromStr("Int") { it.toInt() }
+    public val long: ParseEnv<Long> = fromStr("Long") { it.toLong() }
+
+    /** 128-bit signed integer; Kotlin stdlib has no native i128, so values are clamped to [Long]. */
+    public val long128: ParseEnv<Long> = fromStr("Long128") { it.toLong() }
+
+    /** Pointer-sized signed integer; mapped to [Long] on all supported targets. */
+    public val nativeInt: ParseEnv<Long> = fromStr("NativeInt") { it.toLong() }
+
+    public val uByte: ParseEnv<UByte> = fromStr("UByte") { it.toUByte() }
+    public val uShort: ParseEnv<UShort> = fromStr("UShort") { it.toUShort() }
+    public val uInt: ParseEnv<UInt> = fromStr("UInt") { it.toUInt() }
+    public val uLong: ParseEnv<ULong> = fromStr("ULong") { it.toULong() }
+
+    /** 128-bit unsigned integer; Kotlin stdlib has no native u128, so values are clamped to [ULong]. */
+    public val uLong128: ParseEnv<ULong> = fromStr("ULong128") { it.toULong() }
+
+    /** Pointer-sized unsigned integer; mapped to [ULong] on all supported targets. */
+    public val nativeUInt: ParseEnv<ULong> = fromStr("NativeUInt") { it.toULong() }
+
+    public val ipAddr: ParseEnv<IpAddr> = fromStr("IpAddr") { IpAddr.parse(it) }
+    public val ipv4Addr: ParseEnv<Ipv4Addr> = fromStr("Ipv4Addr") { Ipv4Addr.parse(it) }
+    public val ipv6Addr: ParseEnv<Ipv6Addr> = fromStr("Ipv6Addr") { Ipv6Addr.parse(it) }
+    public val pathBuf: ParseEnv<PathBuf> = fromStr("PathBuf") { PathBuf(it) }
+    public val socketAddr: ParseEnv<SocketAddr> = fromStr("SocketAddr") { SocketAddr.parse(it) }
+
+    /** [String] is returned verbatim. */
+    public val string: ParseEnv<String> = ParseEnv { it }
+
+    /**
+     * `Duration` by default is parsed as a `Double` count of seconds.
+     */
+    public val duration: ParseEnv<Duration> = ParseEnv { value ->
+        try {
+            value.toDouble().toDuration(DurationUnit.SECONDS)
+        } catch (e: NumberFormatException) {
+            throw ParseError(typeName = "Duration", msg = e.message ?: e.toString())
+        }
+    }
+
+    /** `List<T>` is by default parsed as comma-separated values. */
+    public fun <T> list(inner: ParseEnv<T>): ParseEnv<List<T>> = ParseEnv { value ->
+        value.split(",").map { inner.parseEnv(it) }
+    }
+
+    /** `Set<T>` is by default parsed as comma-separated values. */
+    public fun <T> set(inner: ParseEnv<T>): ParseEnv<Set<T>> = ParseEnv { value ->
+        value.split(",").map { inner.parseEnv(it) }.toSet()
+    }
+
+    /** Wraps another parser's result in a non-null value; the default is consulted when missing. */
+    public fun <T : Any> optional(inner: ParseEnv<T>): ParseEnv<T?> = ParseEnv { value ->
+        inner.parseEnv(value)
+    }
+
+    /**
+     * `Boolean` allows two common conventions:
+     *  - String either `"true"` or `"false"` (case insensitive)
+     *  - Integer either `0` or `1`
+     *
+     * Anything else will result in a [ParseError].
+     */
+    public val boolean: ParseEnv<Boolean> = ParseEnv { rawValue ->
+        when (rawValue.lowercase()) {
+            "true", "1" -> true
+            "false", "0" -> false
+            else -> throw ParseError.fromMsg("Boolean", "expected either true or false")
         }
     }
 }
 
-public object ByteParser : ParseEnv<Byte> {
-    override fun parseEnv(value: String): Result<Byte> =
-        parseFromStr("Byte", value) { it.toByteOrNull() }
-}
-
-public object ShortParser : ParseEnv<Short> {
-    override fun parseEnv(value: String): Result<Short> =
-        parseFromStr("Short", value) { it.toShortOrNull() }
-}
-
-public object IntParser : ParseEnv<Int> {
-    override fun parseEnv(value: String): Result<Int> =
-        parseFromStr("Int", value) { it.toIntOrNull() }
-}
-
-public object LongParser : ParseEnv<Long> {
-    override fun parseEnv(value: String): Result<Long> =
-        parseFromStr("Long", value) { it.toLongOrNull() }
-}
-
-public object UByteParser : ParseEnv<UByte> {
-    override fun parseEnv(value: String): Result<UByte> =
-        parseFromStr("UByte", value) { it.toUByteOrNull() }
-}
-
-public object UShortParser : ParseEnv<UShort> {
-    override fun parseEnv(value: String): Result<UShort> =
-        parseFromStr("UShort", value) { it.toUShortOrNull() }
-}
-
-public object UIntParser : ParseEnv<UInt> {
-    override fun parseEnv(value: String): Result<UInt> =
-        parseFromStr("UInt", value) { it.toUIntOrNull() }
-}
-
-public object ULongParser : ParseEnv<ULong> {
-    override fun parseEnv(value: String): Result<ULong> =
-        parseFromStr("ULong", value) { it.toULongOrNull() }
-}
-
-public object StringParser : ParseEnv<String> {
-    override fun parseEnv(value: String): Result<String> = Result.success(value)
-}
-
-/**
- * [Duration] by default is parsed as `Double` seconds.
- */
-public object DurationParser : ParseEnv<Duration> {
-    override fun parseEnv(value: String): Result<Duration> =
-        when (val parsed = DoubleParser.parseEnv(value)) {
-            else -> parsed.fold(
-                onSuccess = { Result.success(it.seconds) },
-                onFailure = { err ->
-                    if (err is ParseError) {
-                        Result.failure(err.withTypeName("Duration"))
-                    } else {
-                        Result.failure(err)
-                    }
-                },
-            )
-        }
-}
-
-/**
- * `List<T>` is by default parsed as comma-separated values.
- */
-public class ListParser<T : Any>(private val inner: ParseEnv<T>) : ParseEnv<List<T>> {
-    override fun parseEnv(value: String): Result<List<T>> {
-        val out = ArrayList<T>()
-        for (part in value.split(',')) {
-            val r = inner.parseEnv(part)
-            r.exceptionOrNull()?.let { return Result.failure(it) }
-            out += r.getOrThrow()
-        }
-        return Result.success(out)
-    }
-}
-
-/**
- * `Set<T>` is by default parsed as comma-separated values.
- */
-public class SetParser<T : Any>(private val inner: ParseEnv<T>) : ParseEnv<Set<T>> {
-    override fun parseEnv(value: String): Result<Set<T>> {
-        val out = LinkedHashSet<T>()
-        for (part in value.split(',')) {
-            val r = inner.parseEnv(part)
-            r.exceptionOrNull()?.let { return Result.failure(it) }
-            out += r.getOrThrow()
-        }
-        return Result.success(out)
-    }
-}
-
-/**
- * Translates Rust's `impl<T> ParseEnv for Option<T>`. A present environment variable parses to a
- * non-null `T`; the upstream impl only ever produces `Some(_)` from a present value, so this
- * Kotlin shape mirrors that by wrapping the inner parser's success in `T?`. The "unset" branch is
- * handled by the [envFlag] caller's `default` lambda, exactly as in Rust where `Option<T>` flags
- * always carry a default of `None`.
- */
-public class NullableParser<T : Any>(private val inner: ParseEnv<T>) : ParseEnv<T?> {
-    override fun parseEnv(value: String): Result<T?> = inner.parseEnv(value).map { it }
-}
-
-/**
- * Boolean allows two common conventions:
- *  - String either "true" or "false" (case insensitive)
- *  - Integer either 0 or 1
- *
- * Anything else will result in a [ParseError].
- */
-public object BoolParser : ParseEnv<Boolean> {
-    override fun parseEnv(value: String): Result<Boolean> {
-        return when (value.lowercase()) {
-            "true", "1" -> Result.success(true)
-            "false", "0" -> Result.success(false)
-            else -> Result.failure(
-                ParseError.fromMsg("Boolean", "expected either true or false"),
-            )
-        }
-    }
-}
-
-/**
- * Static lazily evaluated environment variable.
- *
- * Wraps a [kotlin.Lazy] so that callers can either read [LazyEnv.value] directly or use property
- * delegation: `val PORT: UShort by envFlag(...)`.
- */
-public class LazyEnv<T>(initFn: () -> T) {
+/** Static lazily evaluated environment variable. */
+public class LazyEnv<out T> internal constructor(initFn: () -> T) {
     private val inner: Lazy<T> = lazy(initFn)
 
+    /** Eagerly resolves and returns the parsed value, mirroring the upstream `Deref` impl. */
     public val value: T get() = inner.value
 
+    /** Allows `by` delegation: `val PORT: UShort by envFlag(...)`. */
     public operator fun getValue(thisRef: Any?, property: KProperty<*>): T = inner.value
 
     override fun toString(): String = inner.value.toString()
 }
 
-/**
- * Helper function for better failure-mode error messages — the Kotlin analogue of Rust's
- * `__apply_parse_fn` macro internal.
- */
-@PublishedApi
-internal fun <T> applyParseFn(
-    parse: (String) -> Result<T>,
-    key: String,
-    value: String,
-): T {
-    return parse(value).fold(
-        onSuccess = { it },
-        onFailure = { invalidEnvVar(key, it) },
+/** Helper function for better resolution errors. */
+internal fun <T> applyParseFn(func: (String) -> T, key: String, value: String): T {
+    return try {
+        func(value)
+    } catch (e: ParseError) {
+        invalidEnvVar(key, e)
+    } catch (e: Throwable) {
+        invalidEnvVar(key, e)
+    }
+}
+
+internal fun invalidEnvVar(key: String, err: Any?): Nothing {
+    throw IllegalStateException(
+        "Invalid environment variable $key, ${(err as? Throwable)?.message ?: err}",
     )
 }
 
-@PublishedApi
-internal fun invalidEnvVar(key: String, err: Throwable): Nothing {
-    val msg = (err as? ParseError)?.let { "failed to parse as ${it.typeName}: ${it.msg}" }
-        ?: err.message
-        ?: err.toString()
-    throw IllegalStateException("Invalid environment variable $key, $msg")
-}
-
-@PublishedApi
 internal fun missingEnvVar(key: String): Nothing {
     throw IllegalStateException("Missing required environment variable $key")
 }
 
 /**
- * Look up the value of an environment variable.
+ * Declare a lazy environment variable with an optional default and an explicit parser.
  *
- * Returns the trimmed-and-decoded String value of the variable, or `null` when the variable is
- * unset for any reason. Each KMP target supplies its own actual; browser-side `js` and `wasmJs`
- * always return `null` because no environment is reachable from a browser document.
- */
-public expect fun envGet(key: String): String?
-
-/**
- * Declare an environment variable with optional default and parsing function.
+ * Values are lazily evaluated once the first time they are dereferenced.
  *
- * Values are static and lazily evaluated once the first time they are dereferenced. The Kotlin
- * function is the runtime analogue of the upstream `env_flags!` macro: each Rust declaration
- *
- * ```text
- * pub PORT: u16 = 8080;
- * ```
- *
- * translates to one Kotlin call site
- *
- * ```kotlin
- * val PORT by envFlag("PORT", UShortParser, default = { 8080u })
- * ```
- *
- * See the module-level documentation for examples.
+ * @param key the environment variable name; this is also the panic message subject when missing
+ * or invalid
+ * @param parse the [ParseEnv] used to convert the raw string into [T]
+ * @param source the [EnvSource] consulted at resolution time (defaults to the platform's
+ * process environment)
+ * @param default a thunk producing the value when the environment variable is unset; if
+ * `null`, dereferencing will panic with a "missing required environment variable" message
  */
 public fun <T> envFlag(
     key: String,
-    parser: ParseEnv<T>,
-    default: (() -> T)? = null,
-): LazyEnv<T> = envFlag(key = key, parser = { parser.parseEnv(it) }, default = default)
-
-/**
- * Declare an environment variable with an inline parsing function.
- *
- * See [envFlag] above for the [ParseEnv]-typed entry point.
- */
-public fun <T> envFlag(
-    key: String,
-    parser: (String) -> Result<T>,
+    parse: ParseEnv<T>,
+    source: EnvSource = EnvSource.SYSTEM,
     default: (() -> T)? = null,
 ): LazyEnv<T> = LazyEnv {
-    when (val v = envGet(key)) {
-        null -> if (default != null) default() else missingEnvVar(key)
-        else -> applyParseFn(parser, key, v)
+    val raw = source.get(key)
+    when {
+        raw != null -> applyParseFn(parse::parseEnv, key, raw)
+        default != null -> default.invoke()
+        else -> missingEnvVar(key)
     }
 }
+
+/**
+ * Convenience overload used when the upstream invocation supplied both a default and a parser
+ * positionally, e.g. `KEY: Duration = Duration::from_millis(30), |value| value.parse()...`.
+ */
+public fun <T> envFlag(
+    key: String,
+    parse: (String) -> T,
+    source: EnvSource = EnvSource.SYSTEM,
+    default: (() -> T)? = null,
+): LazyEnv<T> = envFlag(key = key, parse = ParseEnv(parse), source = source, default = default)
