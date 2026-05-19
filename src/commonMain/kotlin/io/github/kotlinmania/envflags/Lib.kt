@@ -65,6 +65,9 @@ public interface ParseEnv<out T> {
     }
 }
 
+/** Error type marker corresponding to upstream parser associated error types. */
+public typealias Err = Throwable
+
 /** Intermediate error type used in parsing failures to generate helpful messages. */
 public class ParseError(
     public val typeName: String,
@@ -74,6 +77,9 @@ public class ParseError(
         public fun fromMsg(typeName: String, msg: Any?): ParseError =
             ParseError(typeName = typeName, msg = msg.toString())
     }
+
+    /** Display-format rendering for parity with the upstream formatter implementation. */
+    public fun fmt(): String = message ?: "failed to parse as $typeName: $msg"
 
     internal fun withTypeName(newTypeName: String): ParseError =
         ParseError(typeName = newTypeName, msg = msg)
@@ -209,10 +215,23 @@ public class LazyEnv<out T> internal constructor(initFn: () -> T) {
     /** Eagerly resolves and returns the parsed value, mirroring the upstream `Deref` impl. */
     public val value: T get() = inner.value
 
+    /** Returns the lazily resolved value, matching the upstream dereference operation. */
+    public fun deref(): T = inner.value
+
     /** Allows `by` delegation: `val PORT: UShort by envFlag(...)`. */
     public operator fun getValue(thisRef: Any?, property: KProperty<*>): T = inner.value
 
+    /** Display-format rendering for parity with the upstream formatter implementation. */
+    public fun fmt(): String = inner.value.toString()
+
     override fun toString(): String = inner.value.toString()
+}
+
+/** Dereference target marker corresponding to upstream `LazyEnv` target type. */
+public typealias Target = Any?
+
+internal fun printStr(str: String) {
+    println(str)
 }
 
 /** Helper function for better resolution errors. */

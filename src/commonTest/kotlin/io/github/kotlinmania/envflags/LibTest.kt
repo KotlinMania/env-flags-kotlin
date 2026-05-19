@@ -12,8 +12,6 @@ import kotlin.time.Duration.Companion.seconds
 
 private fun src(vararg pairs: Pair<String, String>): EnvSource = MapEnvSource(pairs.toMap())
 
-private fun printStr(s: String): String = s
-
 class LibTest {
     @Test
     fun testKeyTypeSet() {
@@ -304,21 +302,21 @@ class LibTest {
     }
 
     @Test
-    fun testTypesIpAddr() {
+    fun testTypesIpaddr() {
         val source = src("ENV_FLAGS_TEST_TYPES_IPADDR" to "0.0.0.0")
         val expected = IpAddr.V4(Ipv4Addr.parse("0.0.0.0"))
         assertEquals(expected, envFlag("ENV_FLAGS_TEST_TYPES_IPADDR", Parsers.ipAddr, source).value)
     }
 
     @Test
-    fun testTypesIpv4Addr() {
+    fun testTypesIpv4addr() {
         val source = src("ENV_FLAGS_TEST_TYPES_IPV4ADDR" to "127.0.0.1")
         val expected = Ipv4Addr.parse("127.0.0.1")
         assertEquals(expected, envFlag("ENV_FLAGS_TEST_TYPES_IPV4ADDR", Parsers.ipv4Addr, source).value)
     }
 
     @Test
-    fun testTypesIpv6Addr() {
+    fun testTypesIpv6addr() {
         val source = src(
             "ENV_FLAGS_TEST_TYPES_IPV6ADDR" to "2001:0000:130F:0000:0000:09C0:876A:130B",
         )
@@ -327,14 +325,14 @@ class LibTest {
     }
 
     @Test
-    fun testTypesSocketAddr() {
+    fun testTypesSocketaddr() {
         val source = src("ENV_FLAGS_TEST_TYPES_SOCKETADDR" to "192.168.0.1:8080")
         val expected = SocketAddr.parse("192.168.0.1:8080")
         assertEquals(expected, envFlag("ENV_FLAGS_TEST_TYPES_SOCKETADDR", Parsers.socketAddr, source).value)
     }
 
     @Test
-    fun testTypesPathBuf() {
+    fun testTypesPathbuf() {
         val source = src("ENV_FLAGS_TEST_TYPES_PATHBUF" to "/var/lib/file.txt")
         assertEquals(
             PathBuf.from("/var/lib/file.txt"),
@@ -399,8 +397,8 @@ class LibTest {
             source = src(),
         ) { "hello" }
 
-        assertEquals("hello", printStr(flag.value))
-        assertEquals("hello", printStr(flag.value))
+        printStr(flag.value)
+        printStr(flag.deref())
     }
 
     @Test
