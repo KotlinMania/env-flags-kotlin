@@ -12,6 +12,8 @@ import kotlin.time.Duration.Companion.seconds
 
 private fun src(vararg pairs: Pair<String, String>): EnvSource = MapEnvSource(pairs.toMap())
 
+private fun printStr(s: String): String = s
+
 class LibTest {
     @Test
     fun testKeyTypeSet() {
@@ -33,7 +35,7 @@ class LibTest {
         val pub = envFlag(
             "ENV_FLAGS_TEST_KEY_TYPE_UNSET",
             Parsers.uShort,
-            source = MapEnvSource(emptyMap()),
+            source = src(),
         )
         assertFailsWith<IllegalStateException> { pub.value }
     }
@@ -88,7 +90,7 @@ class LibTest {
         val unset = envFlag(
             "ENV_FLAGS_TEST_PARSE_FN_UNSET",
             parse = { it.toLong().milliseconds },
-            source = MapEnvSource(emptyMap()),
+            source = src(),
         )
         assertFailsWith<IllegalStateException> { unset.value }
     }
@@ -128,7 +130,7 @@ class LibTest {
     }
 
     @Test
-    fun testTypesFloat() {
+    fun testTypesF32() {
         val source = src(
             "ENV_FLAGS_TEST_TYPES_F32_POS" to "1.2",
             "ENV_FLAGS_TEST_TYPES_F32_NEG" to "-3.2",
@@ -142,7 +144,7 @@ class LibTest {
     }
 
     @Test
-    fun testInvalidFloat() {
+    fun testInvalidF32() {
         val flag = envFlag(
             "ENV_FLAGS_TEST_INVALID_F32",
             Parsers.float,
@@ -152,7 +154,7 @@ class LibTest {
     }
 
     @Test
-    fun testTypesDouble() {
+    fun testTypesF64() {
         val source = src(
             "ENV_FLAGS_TEST_TYPES_F64_POS" to "41.1",
             "ENV_FLAGS_TEST_TYPES_F64_NEG" to "-0.4",
@@ -166,7 +168,7 @@ class LibTest {
     }
 
     @Test
-    fun testInvalidDouble() {
+    fun testInvalidF64() {
         val flag = envFlag(
             "ENV_FLAGS_TEST_INVALID_F64",
             Parsers.double,
@@ -176,7 +178,7 @@ class LibTest {
     }
 
     @Test
-    fun testTypesByte() {
+    fun testTypesI8() {
         val source = src(
             "ENV_FLAGS_TEST_TYPES_I8_POS" to "4",
             "ENV_FLAGS_TEST_TYPES_I8_NEG" to "-4",
@@ -186,7 +188,7 @@ class LibTest {
     }
 
     @Test
-    fun testInvalidByte() {
+    fun testInvalidI8() {
         val flag = envFlag(
             "ENV_FLAGS_TEST_INVALID_I8",
             Parsers.byte,
@@ -196,7 +198,7 @@ class LibTest {
     }
 
     @Test
-    fun testTypesShort() {
+    fun testTypesI16() {
         val source = src(
             "ENV_FLAGS_TEST_TYPES_I16_POS" to "2559",
             "ENV_FLAGS_TEST_TYPES_I16_NEG" to "-2559",
@@ -206,7 +208,7 @@ class LibTest {
     }
 
     @Test
-    fun testInvalidShort() {
+    fun testInvalidI16() {
         val flag = envFlag(
             "ENV_FLAGS_TEST_INVALID_I16",
             Parsers.short,
@@ -216,7 +218,7 @@ class LibTest {
     }
 
     @Test
-    fun testTypesInt() {
+    fun testTypesI32() {
         val source = src(
             "ENV_FLAGS_TEST_TYPES_I32_POS" to "124",
             "ENV_FLAGS_TEST_TYPES_I32_NEG" to "-124",
@@ -226,7 +228,7 @@ class LibTest {
     }
 
     @Test
-    fun testInvalidInt() {
+    fun testInvalidI32() {
         val flag = envFlag(
             "ENV_FLAGS_TEST_INVALID_I32",
             Parsers.int,
@@ -236,7 +238,7 @@ class LibTest {
     }
 
     @Test
-    fun testTypesLong() {
+    fun testTypesI64() {
         val source = src(
             "ENV_FLAGS_TEST_TYPES_I64_POS" to "13966932211",
             "ENV_FLAGS_TEST_TYPES_I64_NEG" to "-13966932211",
@@ -246,7 +248,7 @@ class LibTest {
     }
 
     @Test
-    fun testTypesLong128() {
+    fun testTypesI128() {
         val source = src(
             "ENV_FLAGS_TEST_TYPES_I128_POS" to "1020304995959399",
             "ENV_FLAGS_TEST_TYPES_I128_NEG" to "-1020304995959399",
@@ -256,7 +258,7 @@ class LibTest {
     }
 
     @Test
-    fun testTypesNativeInt() {
+    fun testTypesIsize() {
         val source = src(
             "ENV_FLAGS_TEST_TYPES_ISIZE_POS" to "29294",
             "ENV_FLAGS_TEST_TYPES_ISIZE_NEG" to "-29294",
@@ -266,37 +268,37 @@ class LibTest {
     }
 
     @Test
-    fun testTypesUByte() {
+    fun testTypesU8() {
         val source = src("ENV_FLAGS_TEST_TYPES_U8" to "10")
         assertEquals(10u.toUByte(), envFlag("ENV_FLAGS_TEST_TYPES_U8", Parsers.uByte, source).value)
     }
 
     @Test
-    fun testTypesUShort() {
+    fun testTypesU16() {
         val source = src("ENV_FLAGS_TEST_TYPES_U16" to "7432")
         assertEquals(7432u.toUShort(), envFlag("ENV_FLAGS_TEST_TYPES_U16", Parsers.uShort, source).value)
     }
 
     @Test
-    fun testTypesUInt() {
+    fun testTypesU32() {
         val source = src("ENV_FLAGS_TEST_TYPES_U32" to "305528")
         assertEquals(305528u, envFlag("ENV_FLAGS_TEST_TYPES_U32", Parsers.uInt, source).value)
     }
 
     @Test
-    fun testTypesULong() {
+    fun testTypesU64() {
         val source = src("ENV_FLAGS_TEST_TYPES_U64" to "123456789")
         assertEquals(123456789uL, envFlag("ENV_FLAGS_TEST_TYPES_U64", Parsers.uLong, source).value)
     }
 
     @Test
-    fun testTypesULong128() {
+    fun testTypesU128() {
         val source = src("ENV_FLAGS_TEST_TYPES_U128" to "2919239")
         assertEquals(2919239uL, envFlag("ENV_FLAGS_TEST_TYPES_U128", Parsers.uLong128, source).value)
     }
 
     @Test
-    fun testTypesNativeUInt() {
+    fun testTypesUsize() {
         val source = src("ENV_FLAGS_TEST_TYPES_USIZE" to "2939")
         assertEquals(2939uL, envFlag("ENV_FLAGS_TEST_TYPES_USIZE", Parsers.nativeUInt, source).value)
     }
@@ -358,21 +360,21 @@ class LibTest {
     }
 
     @Test
-    fun testTypesList() {
+    fun testTypesVec() {
         val source = src("ENV_FLAGS_TEST_VEC" to "1,2,3,4")
         val flag = envFlag("ENV_FLAGS_TEST_VEC", Parsers.list(Parsers.uInt), source)
         assertEquals(listOf(1u, 2u, 3u, 4u), flag.value)
     }
 
     @Test
-    fun testTypesSet() {
+    fun testTypesHashSet() {
         val source = src("ENV_FLAGS_TEST_HASH_SET" to "1,2,3,4,1,3")
         val flag = envFlag("ENV_FLAGS_TEST_HASH_SET", Parsers.set(Parsers.uInt), source)
         assertEquals(setOf(1u, 2u, 3u, 4u), flag.value)
     }
 
     @Test
-    fun testTypesBoolean() {
+    fun testTypesBool() {
         val source = src(
             "ENV_FLAGS_TEST_BOOL_TRUE" to "true",
             "ENV_FLAGS_TEST_BOOL_FALSE" to "false",
@@ -394,10 +396,8 @@ class LibTest {
         val flag = envFlag(
             "ENV_FLAGS_TEST_DEREF",
             Parsers.string,
-            source = MapEnvSource(emptyMap()),
+            source = src(),
         ) { "hello" }
-
-        fun printStr(s: String): String = s
 
         assertEquals("hello", printStr(flag.value))
         assertEquals("hello", printStr(flag.value))
@@ -408,7 +408,7 @@ class LibTest {
         val flag = envFlag(
             "ENV_FLAGS_TEST_DEBUG",
             Parsers.string,
-            source = MapEnvSource(emptyMap()),
+            source = src(),
         ) { "cat" }
         assertEquals("cat", flag.toString())
     }
@@ -418,7 +418,7 @@ class LibTest {
         val flag = envFlag(
             "ENV_FLAGS_TEST_DEBUG",
             Parsers.string,
-            source = MapEnvSource(emptyMap()),
+            source = src(),
         ) { "cat" }
         assertEquals("cat", flag.toString())
     }

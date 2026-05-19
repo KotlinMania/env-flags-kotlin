@@ -53,9 +53,16 @@ import kotlin.time.toDuration
  * Check [Parsers] for the built-in type definitions if you're concerned about the parsing logic.
  * The thrown exception's `message` will appear in the panic message when parsing fails.
  */
-public fun interface ParseEnv<out T> {
+public interface ParseEnv<out T> {
     /** Tries to parse the value retrieved from the platform environment. */
     public fun parseEnv(value: String): T
+
+    public companion object {
+        public operator fun <T> invoke(parser: (String) -> T): ParseEnv<T> =
+            object : ParseEnv<T> {
+                override fun parseEnv(value: String): T = parser(value)
+            }
+    }
 }
 
 /** Intermediate error type used in parsing failures to generate helpful messages. */
@@ -73,15 +80,15 @@ public class ParseError(
 }
 
 /**
- * Built-in [ParseEnv] instances mirroring the upstream `gen_parse_env_using_fromstr!`,
- * `String`, `&'static str`, `Duration`, `Vec<T>`, `HashSet<T>`, `Option<T>`, and `bool` impls.
+ * Built-in [ParseEnv] instances mirroring the upstream parser coverage for numeric values,
+ * text, durations, lists, sets, optional values, and booleans.
  *
  * Where Kotlin's stdlib does not provide a direct counterpart of the Rust standard library type
  * (`IpAddr`, `Ipv4Addr`, `Ipv6Addr`, `SocketAddr`, `PathBuf`), this module exposes a small
  * value class with the same parsing behavior so the public API surface matches the upstream.
  */
 public object Parsers {
-    private inline fun <T> fromStr(typeName: String, crossinline body: (String) -> T): ParseEnv<T> =
+    private fun <T> fromStr(typeName: String, body: (String) -> T): ParseEnv<T> =
         ParseEnv { value ->
             try {
                 body(value)
@@ -122,7 +129,7 @@ public object Parsers {
     public val int: ParseEnv<Int> = fromStr("Int") { it.toInt() }
     public val long: ParseEnv<Long> = fromStr("Long") { it.toLong() }
 
-    /** 128-bit signed integer; Kotlin stdlib has no native i128, so values are clamped to [Long]. */
+    /** 128-bit signed integer parser mapped to [Long], the widest common signed integer type. */
     public val long128: ParseEnv<Long> = fromStr("Long128") { it.toLong() }
 
     /** Pointer-sized signed integer; mapped to [Long] on all supported targets. */
@@ -133,7 +140,7 @@ public object Parsers {
     public val uInt: ParseEnv<UInt> = fromStr("UInt") { it.toUInt() }
     public val uLong: ParseEnv<ULong> = fromStr("ULong") { it.toULong() }
 
-    /** 128-bit unsigned integer; Kotlin stdlib has no native u128, so values are clamped to [ULong]. */
+    /** 128-bit unsigned integer parser mapped to [ULong], the widest common unsigned integer type. */
     public val uLong128: ParseEnv<ULong> = fromStr("ULong128") { it.toULong() }
 
     /** Pointer-sized unsigned integer; mapped to [ULong] on all supported targets. */
@@ -194,6 +201,11 @@ public object Parsers {
 public class LazyEnv<out T> internal constructor(initFn: () -> T) {
     private val inner: Lazy<T> = lazy(initFn)
 
+    public companion object {
+        /** Creates a lazy environment-backed value from an initializer function. */
+        public fun <T> new(initFn: () -> T): LazyEnv<T> = LazyEnv(initFn)
+    }
+
     /** Eagerly resolves and returns the parsed value, mirroring the upstream `Deref` impl. */
     public val value: T get() = inner.value
 
@@ -252,8 +264,8 @@ public fun <T> envFlag(
 }
 
 /**
- * Convenience overload used when the upstream invocation supplied both a default and a parser
- * positionally, e.g. `KEY: Duration = Duration::from_millis(30), |value| value.parse()...`.
+ * Convenience overload used when an upstream-style invocation supplies both a default and a parser
+ * positionally.
  */
 public fun <T> envFlag(
     key: String,

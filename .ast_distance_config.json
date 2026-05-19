@@ -2,7 +2,7 @@
   "type": "port",
   "name": "env-flags-kotlin",
   "source": {
-    "path": "tmp/env-flags/src",
+    "path": "tmp/env-flags",
     "lang": "rust"
   },
   "target": {
