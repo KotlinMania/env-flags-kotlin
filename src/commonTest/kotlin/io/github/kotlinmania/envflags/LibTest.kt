@@ -15,11 +15,12 @@ private fun src(vararg pairs: Pair<String, String>): EnvSource = MapEnvSource(pa
 class LibTest {
     @Test
     fun testKeyTypeSet() {
-        val source = src(
-            "ENV_FLAGS_TEST_KEY_TYPE_SET_PRIV" to "80",
-            "ENV_FLAGS_TEST_KEY_TYPE_SET_CRATE" to "81",
-            "ENV_FLAGS_TEST_KEY_TYPE_SET_PUB" to "82",
-        )
+        val source =
+            src(
+                "ENV_FLAGS_TEST_KEY_TYPE_SET_PRIV" to "80",
+                "ENV_FLAGS_TEST_KEY_TYPE_SET_CRATE" to "81",
+                "ENV_FLAGS_TEST_KEY_TYPE_SET_PUB" to "82",
+            )
         val priv = envFlag("ENV_FLAGS_TEST_KEY_TYPE_SET_PRIV", Parsers.uShort, source)
         val crate = envFlag("ENV_FLAGS_TEST_KEY_TYPE_SET_CRATE", Parsers.uShort, source)
         val pub = envFlag("ENV_FLAGS_TEST_KEY_TYPE_SET_PUB", Parsers.uShort, source)
@@ -30,21 +31,23 @@ class LibTest {
 
     @Test
     fun testKeyTypeUnset() {
-        val pub = envFlag(
-            "ENV_FLAGS_TEST_KEY_TYPE_UNSET",
-            Parsers.uShort,
-            source = src(),
-        )
+        val pub =
+            envFlag(
+                "ENV_FLAGS_TEST_KEY_TYPE_UNSET",
+                Parsers.uShort,
+                source = src(),
+            )
         assertFailsWith<IllegalStateException> { pub.value }
     }
 
     @Test
     fun testDefault() {
-        val source = src(
-            "ENV_FLAGS_TEST_DEFAULT_SET_PRIV" to "goodbye",
-            "ENV_FLAGS_TEST_DEFAULT_SET_CRATE" to "goodbye",
-            "ENV_FLAGS_TEST_DEFAULT_SET_PUB" to "goodbye",
-        )
+        val source =
+            src(
+                "ENV_FLAGS_TEST_DEFAULT_SET_PRIV" to "goodbye",
+                "ENV_FLAGS_TEST_DEFAULT_SET_CRATE" to "goodbye",
+                "ENV_FLAGS_TEST_DEFAULT_SET_PUB" to "goodbye",
+            )
         val priv = envFlag("ENV_FLAGS_TEST_DEFAULT_SET_PRIV", Parsers.string, source) { "hello" }
         val crate = envFlag("ENV_FLAGS_TEST_DEFAULT_SET_CRATE", Parsers.string, source) { "hello" }
         val pub = envFlag("ENV_FLAGS_TEST_DEFAULT_SET_PUB", Parsers.string, source) { "hello" }
@@ -58,26 +61,30 @@ class LibTest {
 
     @Test
     fun testParseFn() {
-        val source = src(
-            "ENV_FLAGS_TEST_PARSE_FN_PRIV" to "250",
-            "ENV_FLAGS_TEST_PARSE_FN_CRATE" to "5",
-            "ENV_FLAGS_TEST_PARSE_FN_PUB" to "120",
-        )
-        val priv = envFlag(
-            "ENV_FLAGS_TEST_PARSE_FN_PRIV",
-            parse = { it.toLong().milliseconds },
-            source = source,
-        )
-        val crate = envFlag(
-            "ENV_FLAGS_TEST_PARSE_FN_CRATE",
-            parse = { it.toLong().seconds },
-            source = source,
-        )
-        val pub = envFlag(
-            "ENV_FLAGS_TEST_PARSE_FN_PUB",
-            parse = { it.toLong().nanoseconds },
-            source = source,
-        )
+        val source =
+            src(
+                "ENV_FLAGS_TEST_PARSE_FN_PRIV" to "250",
+                "ENV_FLAGS_TEST_PARSE_FN_CRATE" to "5",
+                "ENV_FLAGS_TEST_PARSE_FN_PUB" to "120",
+            )
+        val priv =
+            envFlag(
+                "ENV_FLAGS_TEST_PARSE_FN_PRIV",
+                parse = { it.toLong().milliseconds },
+                source = source,
+            )
+        val crate =
+            envFlag(
+                "ENV_FLAGS_TEST_PARSE_FN_CRATE",
+                parse = { it.toLong().seconds },
+                source = source,
+            )
+        val pub =
+            envFlag(
+                "ENV_FLAGS_TEST_PARSE_FN_PUB",
+                parse = { it.toLong().nanoseconds },
+                source = source,
+            )
         assertEquals(250.milliseconds, priv.value)
         assertEquals(5.seconds, crate.value)
         assertEquals(120.nanoseconds, pub.value)
@@ -85,41 +92,47 @@ class LibTest {
 
     @Test
     fun testParseFnUnset() {
-        val unset = envFlag(
-            "ENV_FLAGS_TEST_PARSE_FN_UNSET",
-            parse = { it.toLong().milliseconds },
-            source = src(),
-        )
+        val unset =
+            envFlag(
+                "ENV_FLAGS_TEST_PARSE_FN_UNSET",
+                parse = { it.toLong().milliseconds },
+                source = src(),
+            )
         assertFailsWith<IllegalStateException> { unset.value }
     }
 
     @Test
     fun testParseFnDefault() {
-        val source = src(
-            "ENV_FLAGS_TEST_PARSE_FN_DEFAULT_PRIV" to "10",
-            "ENV_FLAGS_TEST_PARSE_FN_DEFAULT_CRATE" to "11",
-            "ENV_FLAGS_TEST_PARSE_FN_DEFAULT_PUB" to "12",
-        )
-        val priv = envFlag(
-            "ENV_FLAGS_TEST_PARSE_FN_DEFAULT_PRIV",
-            parse = { it.toLong().milliseconds },
-            source = source,
-        ) { 5.milliseconds }
-        val crate = envFlag(
-            "ENV_FLAGS_TEST_PARSE_FN_DEFAULT_CRATE",
-            parse = { it.toLong().milliseconds },
-            source = source,
-        ) { 5.milliseconds }
-        val pub = envFlag(
-            "ENV_FLAGS_TEST_PARSE_FN_DEFAULT_PUB",
-            parse = { it.toLong().milliseconds },
-            source = source,
-        ) { 5.milliseconds }
-        val unset = envFlag(
-            "ENV_FLAGS_TEST_PARSE_FN_DEFAULT_UNSET",
-            parse = { it.toLong().milliseconds },
-            source = source,
-        ) { 5.milliseconds }
+        val source =
+            src(
+                "ENV_FLAGS_TEST_PARSE_FN_DEFAULT_PRIV" to "10",
+                "ENV_FLAGS_TEST_PARSE_FN_DEFAULT_CRATE" to "11",
+                "ENV_FLAGS_TEST_PARSE_FN_DEFAULT_PUB" to "12",
+            )
+        val priv =
+            envFlag(
+                "ENV_FLAGS_TEST_PARSE_FN_DEFAULT_PRIV",
+                parse = { it.toLong().milliseconds },
+                source = source,
+            ) { 5.milliseconds }
+        val crate =
+            envFlag(
+                "ENV_FLAGS_TEST_PARSE_FN_DEFAULT_CRATE",
+                parse = { it.toLong().milliseconds },
+                source = source,
+            ) { 5.milliseconds }
+        val pub =
+            envFlag(
+                "ENV_FLAGS_TEST_PARSE_FN_DEFAULT_PUB",
+                parse = { it.toLong().milliseconds },
+                source = source,
+            ) { 5.milliseconds }
+        val unset =
+            envFlag(
+                "ENV_FLAGS_TEST_PARSE_FN_DEFAULT_UNSET",
+                parse = { it.toLong().milliseconds },
+                source = source,
+            ) { 5.milliseconds }
 
         assertEquals(10.milliseconds, priv.value)
         assertEquals(11.milliseconds, crate.value)
@@ -129,12 +142,13 @@ class LibTest {
 
     @Test
     fun testTypesF32() {
-        val source = src(
-            "ENV_FLAGS_TEST_TYPES_F32_POS" to "1.2",
-            "ENV_FLAGS_TEST_TYPES_F32_NEG" to "-3.2",
-            "ENV_FLAGS_TEST_TYPES_F32_NAN" to "nan",
-            "ENV_FLAGS_TEST_TYPES_F32_INF" to "inf",
-        )
+        val source =
+            src(
+                "ENV_FLAGS_TEST_TYPES_F32_POS" to "1.2",
+                "ENV_FLAGS_TEST_TYPES_F32_NEG" to "-3.2",
+                "ENV_FLAGS_TEST_TYPES_F32_NAN" to "nan",
+                "ENV_FLAGS_TEST_TYPES_F32_INF" to "inf",
+            )
         assertEquals(1.2f, envFlag("ENV_FLAGS_TEST_TYPES_F32_POS", Parsers.float, source).value)
         assertEquals(-3.2f, envFlag("ENV_FLAGS_TEST_TYPES_F32_NEG", Parsers.float, source).value)
         assertTrue(envFlag("ENV_FLAGS_TEST_TYPES_F32_NAN", Parsers.float, source).value.isNaN())
@@ -143,22 +157,24 @@ class LibTest {
 
     @Test
     fun testInvalidF32() {
-        val flag = envFlag(
-            "ENV_FLAGS_TEST_INVALID_F32",
-            Parsers.float,
-            source = src("ENV_FLAGS_TEST_INVALID_F32" to "cat"),
-        ) { 0.0f }
+        val flag =
+            envFlag(
+                "ENV_FLAGS_TEST_INVALID_F32",
+                Parsers.float,
+                source = src("ENV_FLAGS_TEST_INVALID_F32" to "cat"),
+            ) { 0.0f }
         assertFailsWith<IllegalStateException> { flag.value }
     }
 
     @Test
     fun testTypesF64() {
-        val source = src(
-            "ENV_FLAGS_TEST_TYPES_F64_POS" to "41.1",
-            "ENV_FLAGS_TEST_TYPES_F64_NEG" to "-0.4",
-            "ENV_FLAGS_TEST_TYPES_F64_NAN" to "nan",
-            "ENV_FLAGS_TEST_TYPES_F64_INF" to "inf",
-        )
+        val source =
+            src(
+                "ENV_FLAGS_TEST_TYPES_F64_POS" to "41.1",
+                "ENV_FLAGS_TEST_TYPES_F64_NEG" to "-0.4",
+                "ENV_FLAGS_TEST_TYPES_F64_NAN" to "nan",
+                "ENV_FLAGS_TEST_TYPES_F64_INF" to "inf",
+            )
         assertEquals(41.1, envFlag("ENV_FLAGS_TEST_TYPES_F64_POS", Parsers.double, source).value)
         assertEquals(-0.4, envFlag("ENV_FLAGS_TEST_TYPES_F64_NEG", Parsers.double, source).value)
         assertTrue(envFlag("ENV_FLAGS_TEST_TYPES_F64_NAN", Parsers.double, source).value.isNaN())
@@ -167,100 +183,110 @@ class LibTest {
 
     @Test
     fun testInvalidF64() {
-        val flag = envFlag(
-            "ENV_FLAGS_TEST_INVALID_F64",
-            Parsers.double,
-            source = src("ENV_FLAGS_TEST_INVALID_F64" to "cat"),
-        ) { 0.0 }
+        val flag =
+            envFlag(
+                "ENV_FLAGS_TEST_INVALID_F64",
+                Parsers.double,
+                source = src("ENV_FLAGS_TEST_INVALID_F64" to "cat"),
+            ) { 0.0 }
         assertFailsWith<IllegalStateException> { flag.value }
     }
 
     @Test
     fun testTypesI8() {
-        val source = src(
-            "ENV_FLAGS_TEST_TYPES_I8_POS" to "4",
-            "ENV_FLAGS_TEST_TYPES_I8_NEG" to "-4",
-        )
+        val source =
+            src(
+                "ENV_FLAGS_TEST_TYPES_I8_POS" to "4",
+                "ENV_FLAGS_TEST_TYPES_I8_NEG" to "-4",
+            )
         assertEquals(4, envFlag("ENV_FLAGS_TEST_TYPES_I8_POS", Parsers.byte, source).value.toInt())
         assertEquals(-4, envFlag("ENV_FLAGS_TEST_TYPES_I8_NEG", Parsers.byte, source).value.toInt())
     }
 
     @Test
     fun testInvalidI8() {
-        val flag = envFlag(
-            "ENV_FLAGS_TEST_INVALID_I8",
-            Parsers.byte,
-            source = src("ENV_FLAGS_TEST_INVALID_I8" to "128"),
-        )
+        val flag =
+            envFlag(
+                "ENV_FLAGS_TEST_INVALID_I8",
+                Parsers.byte,
+                source = src("ENV_FLAGS_TEST_INVALID_I8" to "128"),
+            )
         assertFailsWith<IllegalStateException> { flag.value }
     }
 
     @Test
     fun testTypesI16() {
-        val source = src(
-            "ENV_FLAGS_TEST_TYPES_I16_POS" to "2559",
-            "ENV_FLAGS_TEST_TYPES_I16_NEG" to "-2559",
-        )
+        val source =
+            src(
+                "ENV_FLAGS_TEST_TYPES_I16_POS" to "2559",
+                "ENV_FLAGS_TEST_TYPES_I16_NEG" to "-2559",
+            )
         assertEquals(2559, envFlag("ENV_FLAGS_TEST_TYPES_I16_POS", Parsers.short, source).value.toInt())
         assertEquals(-2559, envFlag("ENV_FLAGS_TEST_TYPES_I16_NEG", Parsers.short, source).value.toInt())
     }
 
     @Test
     fun testInvalidI16() {
-        val flag = envFlag(
-            "ENV_FLAGS_TEST_INVALID_I16",
-            Parsers.short,
-            source = src("ENV_FLAGS_TEST_INVALID_I16" to "32768"),
-        ) { 0 }
+        val flag =
+            envFlag(
+                "ENV_FLAGS_TEST_INVALID_I16",
+                Parsers.short,
+                source = src("ENV_FLAGS_TEST_INVALID_I16" to "32768"),
+            ) { 0 }
         assertFailsWith<IllegalStateException> { flag.value }
     }
 
     @Test
     fun testTypesI32() {
-        val source = src(
-            "ENV_FLAGS_TEST_TYPES_I32_POS" to "124",
-            "ENV_FLAGS_TEST_TYPES_I32_NEG" to "-124",
-        )
+        val source =
+            src(
+                "ENV_FLAGS_TEST_TYPES_I32_POS" to "124",
+                "ENV_FLAGS_TEST_TYPES_I32_NEG" to "-124",
+            )
         assertEquals(124, envFlag("ENV_FLAGS_TEST_TYPES_I32_POS", Parsers.int, source).value)
         assertEquals(-124, envFlag("ENV_FLAGS_TEST_TYPES_I32_NEG", Parsers.int, source).value)
     }
 
     @Test
     fun testInvalidI32() {
-        val flag = envFlag(
-            "ENV_FLAGS_TEST_INVALID_I32",
-            Parsers.int,
-            source = src("ENV_FLAGS_TEST_INVALID_I32" to "2147483648"),
-        ) { 0 }
+        val flag =
+            envFlag(
+                "ENV_FLAGS_TEST_INVALID_I32",
+                Parsers.int,
+                source = src("ENV_FLAGS_TEST_INVALID_I32" to "2147483648"),
+            ) { 0 }
         assertFailsWith<IllegalStateException> { flag.value }
     }
 
     @Test
     fun testTypesI64() {
-        val source = src(
-            "ENV_FLAGS_TEST_TYPES_I64_POS" to "13966932211",
-            "ENV_FLAGS_TEST_TYPES_I64_NEG" to "-13966932211",
-        )
+        val source =
+            src(
+                "ENV_FLAGS_TEST_TYPES_I64_POS" to "13966932211",
+                "ENV_FLAGS_TEST_TYPES_I64_NEG" to "-13966932211",
+            )
         assertEquals(13966932211L, envFlag("ENV_FLAGS_TEST_TYPES_I64_POS", Parsers.long, source).value)
         assertEquals(-13966932211L, envFlag("ENV_FLAGS_TEST_TYPES_I64_NEG", Parsers.long, source).value)
     }
 
     @Test
     fun testTypesI128() {
-        val source = src(
-            "ENV_FLAGS_TEST_TYPES_I128_POS" to "1020304995959399",
-            "ENV_FLAGS_TEST_TYPES_I128_NEG" to "-1020304995959399",
-        )
+        val source =
+            src(
+                "ENV_FLAGS_TEST_TYPES_I128_POS" to "1020304995959399",
+                "ENV_FLAGS_TEST_TYPES_I128_NEG" to "-1020304995959399",
+            )
         assertEquals(1020304995959399L, envFlag("ENV_FLAGS_TEST_TYPES_I128_POS", Parsers.long128, source).value)
         assertEquals(-1020304995959399L, envFlag("ENV_FLAGS_TEST_TYPES_I128_NEG", Parsers.long128, source).value)
     }
 
     @Test
     fun testTypesIsize() {
-        val source = src(
-            "ENV_FLAGS_TEST_TYPES_ISIZE_POS" to "29294",
-            "ENV_FLAGS_TEST_TYPES_ISIZE_NEG" to "-29294",
-        )
+        val source =
+            src(
+                "ENV_FLAGS_TEST_TYPES_ISIZE_POS" to "29294",
+                "ENV_FLAGS_TEST_TYPES_ISIZE_NEG" to "-29294",
+            )
         assertEquals(29294L, envFlag("ENV_FLAGS_TEST_TYPES_ISIZE_POS", Parsers.nativeInt, source).value)
         assertEquals(-29294L, envFlag("ENV_FLAGS_TEST_TYPES_ISIZE_NEG", Parsers.nativeInt, source).value)
     }
@@ -317,9 +343,10 @@ class LibTest {
 
     @Test
     fun testTypesIpv6addr() {
-        val source = src(
-            "ENV_FLAGS_TEST_TYPES_IPV6ADDR" to "2001:0000:130F:0000:0000:09C0:876A:130B",
-        )
+        val source =
+            src(
+                "ENV_FLAGS_TEST_TYPES_IPV6ADDR" to "2001:0000:130F:0000:0000:09C0:876A:130B",
+            )
         val expected = Ipv6Addr.parse("2001:0000:130F:0000:0000:09C0:876A:130B")
         assertEquals(expected, envFlag("ENV_FLAGS_TEST_TYPES_IPV6ADDR", Parsers.ipv6Addr, source).value)
     }
@@ -343,16 +370,18 @@ class LibTest {
     @Test
     fun testTypesOption() {
         val source = src("ENV_FLAGS_TEST_OPTION_SET" to "cat")
-        val unset = envFlag(
-            "ENV_FLAGS_TEST_OPTION_UNSET",
-            Parsers.optional(Parsers.string),
-            source,
-        ) { null }
-        val set = envFlag(
-            "ENV_FLAGS_TEST_OPTION_SET",
-            Parsers.optional(Parsers.string),
-            source,
-        ) { null }
+        val unset =
+            envFlag(
+                "ENV_FLAGS_TEST_OPTION_UNSET",
+                Parsers.optional(Parsers.string),
+                source,
+            ) { null }
+        val set =
+            envFlag(
+                "ENV_FLAGS_TEST_OPTION_SET",
+                Parsers.optional(Parsers.string),
+                source,
+            ) { null }
         assertNull(unset.value)
         assertEquals("cat", set.value)
     }
@@ -373,14 +402,15 @@ class LibTest {
 
     @Test
     fun testTypesBool() {
-        val source = src(
-            "ENV_FLAGS_TEST_BOOL_TRUE" to "true",
-            "ENV_FLAGS_TEST_BOOL_FALSE" to "false",
-            "ENV_FLAGS_TEST_BOOL_TRUE_UPPER" to "TRUE",
-            "ENV_FLAGS_TEST_BOOL_FALSE_UPPER" to "FALSE",
-            "ENV_FLAGS_TEST_BOOL_0" to "0",
-            "ENV_FLAGS_TEST_BOOL_1" to "1",
-        )
+        val source =
+            src(
+                "ENV_FLAGS_TEST_BOOL_TRUE" to "true",
+                "ENV_FLAGS_TEST_BOOL_FALSE" to "false",
+                "ENV_FLAGS_TEST_BOOL_TRUE_UPPER" to "TRUE",
+                "ENV_FLAGS_TEST_BOOL_FALSE_UPPER" to "FALSE",
+                "ENV_FLAGS_TEST_BOOL_0" to "0",
+                "ENV_FLAGS_TEST_BOOL_1" to "1",
+            )
         assertEquals(true, envFlag("ENV_FLAGS_TEST_BOOL_TRUE", Parsers.boolean, source).value)
         assertEquals(false, envFlag("ENV_FLAGS_TEST_BOOL_FALSE", Parsers.boolean, source).value)
         assertEquals(true, envFlag("ENV_FLAGS_TEST_BOOL_TRUE_UPPER", Parsers.boolean, source).value)
@@ -391,11 +421,12 @@ class LibTest {
 
     @Test
     fun testDeref() {
-        val flag = envFlag(
-            "ENV_FLAGS_TEST_DEREF",
-            Parsers.string,
-            source = src(),
-        ) { "hello" }
+        val flag =
+            envFlag(
+                "ENV_FLAGS_TEST_DEREF",
+                Parsers.string,
+                source = src(),
+            ) { "hello" }
 
         printStr(flag.value)
         printStr(flag.deref())
@@ -403,21 +434,23 @@ class LibTest {
 
     @Test
     fun testDebug() {
-        val flag = envFlag(
-            "ENV_FLAGS_TEST_DEBUG",
-            Parsers.string,
-            source = src(),
-        ) { "cat" }
+        val flag =
+            envFlag(
+                "ENV_FLAGS_TEST_DEBUG",
+                Parsers.string,
+                source = src(),
+            ) { "cat" }
         assertEquals("cat", flag.toString())
     }
 
     @Test
     fun testDisplay() {
-        val flag = envFlag(
-            "ENV_FLAGS_TEST_DEBUG",
-            Parsers.string,
-            source = src(),
-        ) { "cat" }
+        val flag =
+            envFlag(
+                "ENV_FLAGS_TEST_DEBUG",
+                Parsers.string,
+                source = src(),
+            ) { "cat" }
         assertEquals("cat", flag.toString())
     }
 }

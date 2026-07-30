@@ -105,31 +105,35 @@ public object Parsers {
             }
         }
 
-    public val float: ParseEnv<Float> = ParseEnv { value ->
-        when (value.lowercase()) {
-            "nan", "+nan", "-nan" -> Float.NaN
-            "inf", "+inf", "infinity", "+infinity" -> Float.POSITIVE_INFINITY
-            "-inf", "-infinity" -> Float.NEGATIVE_INFINITY
-            else -> try {
-                value.toFloat()
-            } catch (e: NumberFormatException) {
-                throw ParseError.fromMsg("Float", e.message ?: e)
+    public val float: ParseEnv<Float> =
+        ParseEnv { value ->
+            when (value.lowercase()) {
+                "nan", "+nan", "-nan" -> Float.NaN
+                "inf", "+inf", "infinity", "+infinity" -> Float.POSITIVE_INFINITY
+                "-inf", "-infinity" -> Float.NEGATIVE_INFINITY
+                else ->
+                    try {
+                        value.toFloat()
+                    } catch (e: NumberFormatException) {
+                        throw ParseError.fromMsg("Float", e.message ?: e)
+                    }
             }
         }
-    }
 
-    public val double: ParseEnv<Double> = ParseEnv { value ->
-        when (value.lowercase()) {
-            "nan", "+nan", "-nan" -> Double.NaN
-            "inf", "+inf", "infinity", "+infinity" -> Double.POSITIVE_INFINITY
-            "-inf", "-infinity" -> Double.NEGATIVE_INFINITY
-            else -> try {
-                value.toDouble()
-            } catch (e: NumberFormatException) {
-                throw ParseError.fromMsg("Double", e.message ?: e)
+    public val double: ParseEnv<Double> =
+        ParseEnv { value ->
+            when (value.lowercase()) {
+                "nan", "+nan", "-nan" -> Double.NaN
+                "inf", "+inf", "infinity", "+infinity" -> Double.POSITIVE_INFINITY
+                "-inf", "-infinity" -> Double.NEGATIVE_INFINITY
+                else ->
+                    try {
+                        value.toDouble()
+                    } catch (e: NumberFormatException) {
+                        throw ParseError.fromMsg("Double", e.message ?: e)
+                    }
             }
         }
-    }
     public val byte: ParseEnv<Byte> = fromStr("Byte") { it.toByte() }
     public val short: ParseEnv<Short> = fromStr("Short") { it.toShort() }
     public val int: ParseEnv<Int> = fromStr("Int") { it.toInt() }
@@ -164,28 +168,32 @@ public object Parsers {
     /**
      * `Duration` by default is parsed as a `Double` count of seconds.
      */
-    public val duration: ParseEnv<Duration> = ParseEnv { value ->
-        try {
-            value.toDouble().toDuration(DurationUnit.SECONDS)
-        } catch (e: NumberFormatException) {
-            throw ParseError(typeName = "Duration", msg = e.message ?: e.toString())
+    public val duration: ParseEnv<Duration> =
+        ParseEnv { value ->
+            try {
+                value.toDouble().toDuration(DurationUnit.SECONDS)
+            } catch (e: NumberFormatException) {
+                throw ParseError(typeName = "Duration", msg = e.message ?: e.toString())
+            }
         }
-    }
 
     /** `List<T>` is by default parsed as comma-separated values. */
-    public fun <T> list(inner: ParseEnv<T>): ParseEnv<List<T>> = ParseEnv { value ->
-        value.split(",").map { inner.parseEnv(it) }
-    }
+    public fun <T> list(inner: ParseEnv<T>): ParseEnv<List<T>> =
+        ParseEnv { value ->
+            value.split(",").map { inner.parseEnv(it) }
+        }
 
     /** `Set<T>` is by default parsed as comma-separated values. */
-    public fun <T> set(inner: ParseEnv<T>): ParseEnv<Set<T>> = ParseEnv { value ->
-        value.split(",").map { inner.parseEnv(it) }.toSet()
-    }
+    public fun <T> set(inner: ParseEnv<T>): ParseEnv<Set<T>> =
+        ParseEnv { value ->
+            value.split(",").map { inner.parseEnv(it) }.toSet()
+        }
 
     /** Wraps another parser's result in a non-null value; the default is consulted when missing. */
-    public fun <T : Any> optional(inner: ParseEnv<T>): ParseEnv<T?> = ParseEnv { value ->
-        inner.parseEnv(value)
-    }
+    public fun <T : Any> optional(inner: ParseEnv<T>): ParseEnv<T?> =
+        ParseEnv { value ->
+            inner.parseEnv(value)
+        }
 
     /**
      * `Boolean` allows two common conventions:
@@ -194,17 +202,20 @@ public object Parsers {
      *
      * Anything else will result in a [ParseError].
      */
-    public val boolean: ParseEnv<Boolean> = ParseEnv { rawValue ->
-        when (rawValue.lowercase()) {
-            "true", "1" -> true
-            "false", "0" -> false
-            else -> throw ParseError.fromMsg("Boolean", "expected either true or false")
+    public val boolean: ParseEnv<Boolean> =
+        ParseEnv { rawValue ->
+            when (rawValue.lowercase()) {
+                "true", "1" -> true
+                "false", "0" -> false
+                else -> throw ParseError.fromMsg("Boolean", "expected either true or false")
+            }
         }
-    }
 }
 
 /** Static lazily evaluated environment variable. */
-public class LazyEnv<out T> internal constructor(initFn: () -> T) {
+public class LazyEnv<out T> internal constructor(
+    initFn: () -> T,
+) {
     private val inner: Lazy<T> = lazy(initFn)
 
     public companion object {
@@ -235,25 +246,20 @@ internal fun printStr(str: String) {
 }
 
 /** Helper function for better resolution errors. */
-internal fun <T> applyParseFn(func: (String) -> T, key: String, value: String): T {
-    return try {
+internal fun <T> applyParseFn(func: (String) -> T, key: String, value: String): T =
+    try {
         func(value)
     } catch (e: ParseError) {
         invalidEnvVar(key, e)
     } catch (e: Throwable) {
         invalidEnvVar(key, e)
     }
-}
 
-internal fun invalidEnvVar(key: String, err: Any?): Nothing {
-    throw IllegalStateException(
-        "Invalid environment variable $key, ${(err as? Throwable)?.message ?: err}",
-    )
-}
+internal fun invalidEnvVar(key: String, err: Any?): Nothing = throw IllegalStateException(
+    "Invalid environment variable $key, ${(err as? Throwable)?.message ?: err}",
+)
 
-internal fun missingEnvVar(key: String): Nothing {
-    throw IllegalStateException("Missing required environment variable $key")
-}
+internal fun missingEnvVar(key: String): Nothing = throw IllegalStateException("Missing required environment variable $key")
 
 /**
  * Declare a lazy environment variable with an optional default and an explicit parser.
@@ -273,14 +279,15 @@ public fun <T> envFlag(
     parse: ParseEnv<T>,
     source: EnvSource = EnvSource.SYSTEM,
     default: (() -> T)? = null,
-): LazyEnv<T> = LazyEnv {
-    val raw = source.get(key)
-    when {
-        raw != null -> applyParseFn(parse::parseEnv, key, raw)
-        default != null -> default.invoke()
-        else -> missingEnvVar(key)
+): LazyEnv<T> =
+    LazyEnv {
+        val raw = source.get(key)
+        when {
+            raw != null -> applyParseFn(parse::parseEnv, key, raw)
+            default != null -> default.invoke()
+            else -> missingEnvVar(key)
+        }
     }
-}
 
 /**
  * Convenience overload used when an upstream-style invocation supplies both a default and a parser

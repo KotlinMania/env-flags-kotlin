@@ -1,4 +1,3 @@
-// port-lint: ignore (POSIX implementation of EnvSource for src/lib.rs)
 @file:OptIn(kotlinx.cinterop.ExperimentalForeignApi::class)
 
 package io.github.kotlinmania.envflags
