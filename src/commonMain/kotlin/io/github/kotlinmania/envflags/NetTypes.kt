@@ -1,8 +1,9 @@
-// port-lint: ignore (Kotlin counterparts of the std::net and std::path types referenced by src/lib.rs)
 package io.github.kotlinmania.envflags
 
 /** Wrapper for a filesystem path string, mirroring the upstream `PathBuf` use. */
-public data class PathBuf(val path: String) {
+public data class PathBuf(
+    val path: String,
+) {
     override fun toString(): String = path
 
     public companion object {
@@ -11,7 +12,12 @@ public data class PathBuf(val path: String) {
 }
 
 /** IPv4 address, four octets in network order. */
-public data class Ipv4Addr(val a: UByte, val b: UByte, val c: UByte, val d: UByte) {
+public data class Ipv4Addr(
+    val a: UByte,
+    val b: UByte,
+    val c: UByte,
+    val d: UByte,
+) {
     override fun toString(): String = "$a.$b.$c.$d"
 
     public companion object {
@@ -29,26 +35,35 @@ public data class Ipv4Addr(val a: UByte, val b: UByte, val c: UByte, val d: UByt
 }
 
 /** IPv6 address, eight 16-bit groups. */
-public data class Ipv6Addr(val groups: List<UShort>) {
+public data class Ipv6Addr(
+    val groups: List<UShort>,
+) {
     init {
         require(groups.size == 8) { "IPv6 address must contain 8 groups" }
     }
 
     override fun toString(): String =
-        groups.joinToString(":") { it.toUInt().toString(16).padStart(4, '0').uppercase() }
+        groups.joinToString(":") {
+            it
+                .toUInt()
+                .toString(16)
+                .padStart(4, '0')
+                .uppercase()
+        }
 
     public companion object {
         public fun parse(text: String): Ipv6Addr {
-            val expanded: List<String> = if ("::" in text) {
-                val (left, right) = text.split("::", limit = 2)
-                val leftParts = if (left.isEmpty()) emptyList() else left.split(":")
-                val rightParts = if (right.isEmpty()) emptyList() else right.split(":")
-                val missing = 8 - (leftParts.size + rightParts.size)
-                require(missing >= 0) { "IPv6 address has too many groups" }
-                leftParts + List(missing) { "0" } + rightParts
-            } else {
-                text.split(":")
-            }
+            val expanded: List<String> =
+                if ("::" in text) {
+                    val (left, right) = text.split("::", limit = 2)
+                    val leftParts = if (left.isEmpty()) emptyList() else left.split(":")
+                    val rightParts = if (right.isEmpty()) emptyList() else right.split(":")
+                    val missing = 8 - (leftParts.size + rightParts.size)
+                    require(missing >= 0) { "IPv6 address has too many groups" }
+                    leftParts + List(missing) { "0" } + rightParts
+                } else {
+                    text.split(":")
+                }
             require(expanded.size == 8) { "IPv6 address must contain 8 groups" }
             return Ipv6Addr(expanded.map { it.toUInt(16).toUShort() })
         }
@@ -57,11 +72,15 @@ public data class Ipv6Addr(val groups: List<UShort>) {
 
 /** Tagged union over [Ipv4Addr] and [Ipv6Addr]. */
 public sealed class IpAddr {
-    public data class V4(val addr: Ipv4Addr) : IpAddr() {
+    public data class V4(
+        val addr: Ipv4Addr,
+    ) : IpAddr() {
         override fun toString(): String = addr.toString()
     }
 
-    public data class V6(val addr: Ipv6Addr) : IpAddr() {
+    public data class V6(
+        val addr: Ipv6Addr,
+    ) : IpAddr() {
         override fun toString(): String = addr.toString()
     }
 
@@ -72,7 +91,10 @@ public sealed class IpAddr {
 }
 
 /** A pairing of [IpAddr] with a port number. */
-public data class SocketAddr(val ip: IpAddr, val port: UShort) {
+public data class SocketAddr(
+    val ip: IpAddr,
+    val port: UShort,
+) {
     override fun toString(): String = "$ip:$port"
 
     public companion object {
