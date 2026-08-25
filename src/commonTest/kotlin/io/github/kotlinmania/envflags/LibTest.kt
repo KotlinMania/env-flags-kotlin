@@ -1,4 +1,4 @@
-// port-lint: source src/lib.rs
+// port-lint: tests lib.rs
 package io.github.kotlinmania.envflags
 
 import kotlin.test.Test
@@ -417,6 +417,10 @@ class LibTest {
         assertEquals(false, envFlag("ENV_FLAGS_TEST_BOOL_FALSE_UPPER", Parsers.boolean, source).value)
         assertEquals(false, envFlag("ENV_FLAGS_TEST_BOOL_0", Parsers.boolean, source).value)
         assertEquals(true, envFlag("ENV_FLAGS_TEST_BOOL_1", Parsers.boolean, source).value)
+    }
+
+    private fun printStr(s: String) {
+        println(s)
     }
 
     @Test
