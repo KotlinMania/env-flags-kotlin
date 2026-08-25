@@ -971,15 +971,22 @@ tasks.register("swiftExportSmokeTest") {
             }
         }
 
+        val cliTestingInterop = File("/Library/Developer/CommandLineTools/Library/Developer/usr/lib")
         execOperations
             .exec {
                 workingDir = layout.projectDirectory.dir("swift-test-harness").asFile
+                if (cliTestingInterop.exists()) {
+                    environment("DYLD_LIBRARY_PATH", cliTestingInterop.absolutePath)
+                }
                 commandLine("swift", "package", "reset")
             }.assertNormalExitValue()
 
         execOperations
             .exec {
                 workingDir = layout.projectDirectory.dir("swift-test-harness").asFile
+                if (cliTestingInterop.exists()) {
+                    environment("DYLD_LIBRARY_PATH", cliTestingInterop.absolutePath)
+                }
                 commandLine("swift", "test")
             }.assertNormalExitValue()
     }

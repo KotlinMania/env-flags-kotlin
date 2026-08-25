@@ -1,4 +1,4 @@
-// port-lint: source src/lib.rs
+// port-lint: source lib.rs
 package io.github.kotlinmania.envflags
 
 import kotlin.reflect.KProperty
@@ -241,10 +241,6 @@ public class LazyEnv<out T> internal constructor(
 /** Dereference target marker corresponding to upstream `LazyEnv` target type. */
 public typealias Target = Any?
 
-internal fun printStr(str: String) {
-    println(str)
-}
-
 /** Helper function for better resolution errors. */
 internal fun <T> applyParseFn(func: (String) -> T, key: String, value: String): T =
     try {
@@ -271,20 +267,20 @@ internal fun missingEnvVar(key: String): Nothing = throw IllegalStateException("
  * @param parse the [ParseEnv] used to convert the raw string into [T]
  * @param source the [EnvSource] consulted at resolution time (defaults to the platform's
  * process environment)
- * @param default a thunk producing the value when the environment variable is unset; if
+ * @param defaultValue a thunk producing the value when the environment variable is unset; if
  * `null`, dereferencing will panic with a "missing required environment variable" message
  */
 public fun <T> envFlag(
     key: String,
     parse: ParseEnv<T>,
     source: EnvSource = EnvSource.SYSTEM,
-    default: (() -> T)? = null,
+    defaultValue: (() -> T)? = null,
 ): LazyEnv<T> =
     LazyEnv {
         val raw = source.get(key)
         when {
             raw != null -> applyParseFn(parse::parseEnv, key, raw)
-            default != null -> default.invoke()
+            defaultValue != null -> defaultValue.invoke()
             else -> missingEnvVar(key)
         }
     }
@@ -297,5 +293,5 @@ public fun <T> envFlag(
     key: String,
     parse: (String) -> T,
     source: EnvSource = EnvSource.SYSTEM,
-    default: (() -> T)? = null,
-): LazyEnv<T> = envFlag(key = key, parse = ParseEnv(parse), source = source, default = default)
+    defaultValue: (() -> T)? = null,
+): LazyEnv<T> = envFlag(key = key, parse = ParseEnv(parse), source = source, defaultValue = defaultValue)
