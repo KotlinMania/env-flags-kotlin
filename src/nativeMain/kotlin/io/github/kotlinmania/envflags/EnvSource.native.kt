@@ -1,8 +1,5 @@
-@file:OptIn(kotlinx.cinterop.ExperimentalForeignApi::class)
-
 package io.github.kotlinmania.envflags
 
-import kotlinx.cinterop.toKString
-import platform.posix.getenv
+import io.github.kotlinmania.libc.unix.getenv
 
-internal actual fun systemEnvVar(name: String): String? = getenv(name)?.toKString()
+internal actual fun systemEnvVar(name: String): String? = getenv(name)
