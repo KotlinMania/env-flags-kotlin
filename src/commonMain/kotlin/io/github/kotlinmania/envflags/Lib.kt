@@ -108,30 +108,50 @@ public object Parsers {
     public val float: ParseEnv<Float> =
         ParseEnv { value ->
             when (value.lowercase()) {
-                "nan", "+nan", "-nan" -> Float.NaN
-                "inf", "+inf", "infinity", "+infinity" -> Float.POSITIVE_INFINITY
-                "-inf", "-infinity" -> Float.NEGATIVE_INFINITY
-                else ->
+                "nan", "+nan", "-nan" -> {
+                    Float.NaN
+                }
+
+                "inf", "+inf", "infinity", "+infinity" -> {
+                    Float.POSITIVE_INFINITY
+                }
+
+                "-inf", "-infinity" -> {
+                    Float.NEGATIVE_INFINITY
+                }
+
+                else -> {
                     try {
                         value.toFloat()
                     } catch (e: NumberFormatException) {
                         throw ParseError.fromMsg("Float", e.message ?: e)
                     }
+                }
             }
         }
 
     public val double: ParseEnv<Double> =
         ParseEnv { value ->
             when (value.lowercase()) {
-                "nan", "+nan", "-nan" -> Double.NaN
-                "inf", "+inf", "infinity", "+infinity" -> Double.POSITIVE_INFINITY
-                "-inf", "-infinity" -> Double.NEGATIVE_INFINITY
-                else ->
+                "nan", "+nan", "-nan" -> {
+                    Double.NaN
+                }
+
+                "inf", "+inf", "infinity", "+infinity" -> {
+                    Double.POSITIVE_INFINITY
+                }
+
+                "-inf", "-infinity" -> {
+                    Double.NEGATIVE_INFINITY
+                }
+
+                else -> {
                     try {
                         value.toDouble()
                     } catch (e: NumberFormatException) {
                         throw ParseError.fromMsg("Double", e.message ?: e)
                     }
+                }
             }
         }
     public val byte: ParseEnv<Byte> = fromStr("Byte") { it.toByte() }
